@@ -27,7 +27,7 @@ function curve(x:number,y:number,bend:number){const mx=(50+x)/2,my=(50+y)/2,dx=x
 
 export default function PublicNeuralMap(){
  const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null);
- useEffect(()=>{let live=true;fetch("/api/projects",{cache:"no-store"}).then(r=>r.json()).then((v:ResponseData)=>{if(live)setData(v)}).catch(()=>{if(live)setData(null)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[]);
+ useEffect(()=>{let live=true;fetch("/api/public/projects",{cache:"no-store"}).then(r=>r.json()).then((v:ResponseData)=>{if(live)setData(v)}).catch(()=>{if(live)setData(null)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[]);
  const projects=useMemo(()=>[...(data?.projects??[])].sort((a,b)=>Number(needsAttention(b))-Number(needsAttention(a))||(rank[a.priority.toLowerCase()]??9)-(rank[b.priority.toLowerCase()]??9)||new Date(b.lastCommit?.date??0).getTime()-new Date(a.lastCommit?.date??0).getTime()).slice(0,24),[data]);
  const positioned=useMemo(()=>{const place=(list:Project[],rx:number,ry:number,start:number,phase:number)=>list.map((project,i)=>{const a=phase+(i/Math.max(1,list.length))*Math.PI*2;return{project,index:start+i,x:50+Math.cos(a)*rx,y:50+Math.sin(a)*ry};});return[...place(projects.slice(0,8),24,17,0,-Math.PI/2),...place(projects.slice(8),39,28,8,-Math.PI/2+Math.PI/16)]},[projects]);
  const attention=data?.projects.filter(needsAttention).length??0;

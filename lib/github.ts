@@ -46,6 +46,7 @@ export type ProjectSnapshot = {
   blockers: string[];
   statusNote: string;
   stateSource: "project.yml" | "derived";
+  lastWorkedOn: string | null;
   staleDays: number | null;
 };
 

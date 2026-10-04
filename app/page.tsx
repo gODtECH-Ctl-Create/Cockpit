@@ -24,6 +24,7 @@ type Project = {
   blockers: string[];
   statusNote: string;
   stateSource: string;
+  lastWorkedOn: string | null;
   staleDays: number | null;
 };
 
@@ -214,6 +215,33 @@ export default function Home() {
     [data]
   );
 
+  const workspacePulse = useMemo(
+    () =>
+      [...(data?.projects ?? [])]
+        .filter((p) => p.lastWorkedOn)
+        .sort(
+          (a, b) =>
+            new Date(b.lastWorkedOn ?? 0).getTime() -
+            new Date(a.lastWorkedOn ?? 0).getTime()
+        )
+        .slice(0, 4),
+    [data]
+  );
+
+  const pulseSummary = useMemo(() => {
+    if (!data) return "";
+    const latest = workspacePulse.slice(0, 3).map((p) => p.name).join(", ");
+    const focus = latest
+      ? `Recent work is centered on ${latest}.`
+      : "No recent project work has been recorded yet.";
+    const attentionText =
+      attention.length === 0
+        ? "Nothing urgent is currently surfaced."
+        : `${attention.length} project signal${attention.length === 1 ? "" : "s"} need attention.`;
+    const openText = `${counts.openIssues + counts.openPrs} open work item${counts.openIssues + counts.openPrs === 1 ? "" : "s"}`;
+    return `${focus} ${attentionText} There are ${openText} across the workspace.`;
+  }, [data, workspacePulse, attention.length, counts.openIssues, counts.openPrs]);
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -334,22 +362,37 @@ export default function Home() {
                 <div className="aria-orbit orbit-one" />
                 <div className="aria-orbit orbit-two" />
                 <div className="aria-card-top">
-                  <span className="eyebrow">ARIA</span>
-                  <span className="live-badge"><i /> READY</span>
+                  <span className="eyebrow">WORKSPACE PULSE</span>
+                  <span className="live-badge"><i /> LIVE</span>
                 </div>
                 <div className="aria-avatar">A</div>
                 <div className="aria-copy">
-                  <h2>Your command center is ready.</h2>
-                  <p>
-                    I’m watching {counts.total} tracked projects and {counts.openIssues} open issues so you can focus on the decisions that matter.
-                  </p>
+                  <h2>Here’s what’s happening.</h2>
+                  <p>{pulseSummary}</p>
+                </div>
+                <div className="pulse-list">
+                  {workspacePulse.map((p) => (
+                    <button className="pulse-row" key={p.fullName} onClick={() => setSelectedProject(p)}>
+                      <span className="pulse-date">
+                        {p.lastWorkedOn
+                          ? new Date(p.lastWorkedOn + "T12:00:00").toLocaleDateString([], { month: "short", day: "numeric" })
+                          : "—"}
+                      </span>
+                      <span className="pulse-dot" />
+                      <span className="pulse-copy">
+                        <strong>{p.name}</strong>
+                        <span>{p.currentFocus || p.statusNote || "Project activity recorded."}</span>
+                      </span>
+                      <span className="row-arrow">→</span>
+                    </button>
+                  ))}
                 </div>
                 <div className="aria-actions">
-                  <button className="primary-button" onClick={() => { setQuestion("What should I work on next?"); setTimeout(() => document.getElementById("ask-aria")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); }}>
-                    Ask ARIA
+                  <button className="primary-button" onClick={() => { setQuestion("Give me a full workspace briefing."); setTimeout(() => document.getElementById("ask-aria")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); }}>
+                    Brief me
                   </button>
-                  <button className="text-button" onClick={() => document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" })}>
-                    View projects <span>→</span>
+                  <button className="text-button" onClick={() => document.getElementById("activity")?.scrollIntoView({ behavior: "smooth" })}>
+                    View activity <span>→</span>
                   </button>
                 </div>
               </article>

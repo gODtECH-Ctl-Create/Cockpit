@@ -7,6 +7,7 @@ export type TrackedProject = {
 };
 
 export const trackedProjects: TrackedProject[] = [
+  { name: "Cockpit", fullName: "gODtECH-Ctl-Create/Cockpit", group: "core" },
   { name: "ABE-TechLab-Operations", fullName: "gODtECH-Ctl-Create/ABE-TechLab-Operations", group: "core" },
   { name: "A-B-E-TechLab-website", fullName: "gODtECH-Ctl-Create/A-B-E-TechLab-website", group: "core" },
   { name: "ABE-invoice-Gen", fullName: "gODtECH-Ctl-Create/ABE-invoice-Gen", group: "core" },

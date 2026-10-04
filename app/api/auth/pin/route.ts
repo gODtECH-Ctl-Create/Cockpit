@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSessionToken, sessionCookie, sessionCookieName, verifyPin } from "@/lib/auth";
 

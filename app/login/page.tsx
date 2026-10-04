@@ -68,7 +68,7 @@ export default function LoginPage(){
     <div className="login-glow"/>
     <section className="login-card">
       <div className="neural-brand-mark">A</div>
-      <span className="login-kicker">PRIVATE ARIA WORKSPACE</span>
+      <span className="login-kicker">PRIVATE ARIA ACCESS</span>
       <h1>{pinVerified?"Device unlocked.":"Login to ARIA."}</h1>
       <p>{pinVerified?"This session is authenticated. Return to the neural map, or add Face ID on this device for faster login.":"Use your device passkey for biometric login, or fall back to your 6-digit ARIA PIN."}</p>
 

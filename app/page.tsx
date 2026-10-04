@@ -55,7 +55,7 @@ export default function PublicNeuralMap(){
  const enrollPasskey=async()=>{
    setAuthMessage("");setAuthBusy(true);
    try{
-     if(window.location.hostname!=="godtech-cockpit.vercel.app") throw new Error("Face ID enrollment must be done on the production ARIA domain: godtech-cockpit.vercel.app.");
+     if(!["godtech-cockpit.vercel.app","godtech-cockpit-git-feat-public-neural-view-aymaxs-projects.vercel.app"].includes(window.location.hostname)) throw new Error("Open the stable ARIA domain to enroll Face ID.");
      const optionsResponse=await fetch("/api/auth/passkey/register/options",{cache:"no-store"});
      const options=await optionsResponse.json();
      if(!optionsResponse.ok)throw new Error(options.error||"Could not start Face ID enrollment.");

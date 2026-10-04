@@ -178,10 +178,9 @@ async function createIssue(input: ActionInput) {
 }
 
 async function createBranch(input: ActionInput) {
+  const repository = await github<{ default_branch: string }>("/repos/" + input.repo);
   const reference = await github<{ object: { sha: string } }>(
-    "/repos/" + input.repo + "/git/ref/heads/HEAD"
-  ).catch(async () =>
-    github<{ object: { sha: string } }>("/repos/" + input.repo + "/git/ref/heads/" + encodeURIComponent("main"))
+    "/repos/" + input.repo + "/git/ref/heads/" + encodeURIComponent(repository.default_branch)
   );
   const result = await github<{ ref: string }>("/repos/" + input.repo + "/git/refs", {
     method: "POST",
@@ -212,7 +211,7 @@ async function updateProjectState(input: ActionInput) {
       sha: current.sha
     })
   });
-  return { message: "Project state updated on GitHub.", url: "https://github.com/" + input.repo + "/blob/" + encodeURIComponent("main") + "/.godtech/project.yml", commitSha: result.commit.sha };
+  const repository = await github<{ default_branch: string }>("/repos/" + input.repo); return { message: "Project state updated on GitHub.", url: "https://github.com/" + input.repo + "/blob/" + encodeURIComponent(repository.default_branch) + "/.godtech/project.yml", commitSha: result.commit.sha };
 }
 
 export async function executeAction(action: ProposedAction): Promise<ProposedAction> {

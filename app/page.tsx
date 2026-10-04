@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { startRegistration } from "@simplewebauthn/browser";
+import NeuralActionConsole from "@/components/NeuralActionConsole";
 import { useEffect, useMemo, useState } from "react";
 
 type Project = {
@@ -28,7 +29,7 @@ function statusText(p:Project){if(p.projectState==="blocked")return"Blocked";if(
 function curve(x:number,y:number,bend:number){const mx=(50+x)/2,my=(50+y)/2,dx=x-50,dy=y-50,len=Math.max(1,Math.hypot(dx,dy)),amount=bend*Math.min(6,len/5),nx=-dy/len,ny=dx/len;return "M50 50 Q"+(mx+nx*amount).toFixed(2)+" "+(my+ny*amount).toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2);}
 
 export default function PublicNeuralMap(){
- const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null); const[selectedProject,setSelectedProject]=useState<Project|null>(null); const[authenticated,setAuthenticated]=useState(false); const[passkeyConfigured,setPasskeyConfigured]=useState(false); const[authBusy,setAuthBusy]=useState(false); const[authMessage,setAuthMessage]=useState("");
+ const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null); const[selectedProject,setSelectedProject]=useState<Project|null>(null); const[authenticated,setAuthenticated]=useState(false); const[passkeyConfigured,setPasskeyConfigured]=useState(false); const[authBusy,setAuthBusy]=useState(false); const[authMessage,setAuthMessage]=useState(""); const[actionOpen,setActionOpen]=useState(false);
  useEffect(()=>{let live=true;
   (async()=>{
     try{
@@ -89,7 +90,7 @@ export default function PublicNeuralMap(){
     <path d={curve(27,12,1)} className="neural-line signal-line amber visible"/><path d={curve(73,88,-1)} className="neural-line signal-line blue visible"/>
    </svg>
    <div className="neural-entities">
-    {positioned.map(({project,x,y})=>{const id="project:"+project.fullName;return <div key={id} role="status" tabIndex={0} className={`neural-node project-node ${needsAttention(project)?"attention":""} ${selectedProject?.fullName===project.fullName?"selected":""} ${hovered&&!active(id)?"faded":""}`} style={{left:`${x}%`,top:`${y}%`}} onMouseEnter={()=>setHovered(id)} onMouseLeave={()=>setHovered(v=>v===id?null:v)} onFocus={()=>setHovered(id)} onBlur={()=>setHovered(v=>v===id?null:v)} onClick={()=>{if(authenticated)setSelectedProject(project)}} aria-label={`${project.name} ${authenticated?"open edit access":"view details"}`}><i className="node-core"/><strong>{project.name}</strong><small>{needsAttention(project)?"ATTENTION":project.projectState.toUpperCase()}</small><span className="node-tooltip"><b>{project.name}</b><span>{statusText(project)}</span><em>{project.currentFocus||project.description||"Project state tracked by ARIA."}</em></span></div>})}
+    {positioned.map(({project,x,y})=>{const id="project:"+project.fullName;return <div key={id} role="status" tabIndex={0} className={`neural-node project-node ${needsAttention(project)?"attention":""} ${selectedProject?.fullName===project.fullName?"selected":""} ${hovered&&!active(id)?"faded":""}`} style={{left:`${x}%`,top:`${y}%`}} onMouseEnter={()=>setHovered(id)} onMouseLeave={()=>setHovered(v=>v===id?null:v)} onFocus={()=>setHovered(id)} onBlur={()=>setHovered(v=>v===id?null:v)} onClick={()=>{if(authenticated){setSelectedProject(project);setActionOpen(false)}}} aria-label={`${project.name} ${authenticated?"open private inspector":"view details"}`}><i className="node-core"/><strong>{project.name}</strong><small>{needsAttention(project)?"ATTENTION":project.projectState.toUpperCase()}</small><span className="node-tooltip"><b>{project.name}</b><span>{statusText(project)}</span><em>{project.currentFocus||project.description||"Project state tracked by ARIA."}</em></span></div>})}
     <div className="aria-entity-wrap" onMouseEnter={()=>setHovered("aria")} onMouseLeave={()=>setHovered(v=>v==="aria"?null:v)}><div className="aria-neural-node" role="img" aria-label={authenticated?"ARIA private edit access node":"ARIA public read-only node"}><i className="aria-ripple one"/><i className="aria-ripple two"/><span className="aria-core">A</span><strong>ARIA</strong><small>{authenticated?"PRIVATE · EDIT ACCESS":"PUBLIC · READ ONLY"}</small></div></div>
     <div role="status" tabIndex={0} className={`neural-node signal-node attention-signal ${hovered&&!active("attention")?"faded":""}`} style={{left:"27%",top:"12%"}} onMouseEnter={()=>setHovered("attention")} onMouseLeave={()=>setHovered(v=>v==="attention"?null:v)} onFocus={()=>setHovered("attention")} onBlur={()=>setHovered(v=>v==="attention"?null:v)}><i className="signal-icon">!</i><strong>Attention</strong><small>{attention} SURFACED</small><span className="node-tooltip"><b>Needs attention</b><span>{attention} project signals</span><em>Blockers, critical issues, failed workflows, stale work, and access problems.</em></span></div>
     <div role="status" tabIndex={0} className={`neural-node signal-node work-signal ${hovered&&!active("work")?"faded":""}`} style={{left:"73%",top:"88%"}} onMouseEnter={()=>setHovered("work")} onMouseLeave={()=>setHovered(v=>v==="work"?null:v)} onFocus={()=>setHovered("work")} onBlur={()=>setHovered(v=>v==="work"?null:v)}><i className="signal-icon">↗</i><strong>Open work</strong><small>{openWork} ITEMS</small><span className="node-tooltip"><b>Open work</b><span>{openWork} items</span><em>Open issues and pull requests across the tracked workspace.</em></span></div>
@@ -102,7 +103,7 @@ export default function PublicNeuralMap(){
   <div className="neural-mobile-enter">{authenticated?<div className="neural-auth-actions">{!passkeyConfigured?<button className="neural-enter" type="button" onClick={()=>void enrollPasskey()} disabled={authBusy}>Enable Face ID</button>:null}<button className="neural-enter" type="button" onClick={()=>void logout()} disabled={authBusy}>Lock <b>→</b></button></div>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}</div>
   {authMessage?<div className="neural-auth-message" role="status">{authMessage}</div>:null}
   {loading&&!data?<div className="neural-loading"><div className="loader-ring"/><span>Reading operation map…</span></div>:null}
-  {authenticated&&selectedProject?<aside className="neural-inspector">
+  {authenticated&&selectedProject&&!actionOpen?<aside className="neural-inspector">
     <button className="inspector-close" type="button" onClick={()=>setSelectedProject(null)} aria-label="Close project inspector">×</button>
     <span className="inspector-kicker">EDIT ACCESS</span>
     <h2>{selectedProject.name}</h2>
@@ -111,7 +112,7 @@ export default function PublicNeuralMap(){
     <section><small>NEXT MOVE</small><p>{selectedProject.nextStep||"Review project state."}</p></section>
     <section><small>STATUS</small><p>{selectedProject.statusNote||statusText(selectedProject)}</p></section>
     <div className="inspector-stats"><div><b>{selectedProject.openIssues}</b><small>issues</small></div><div><b>{selectedProject.openPullRequests}</b><small>open PRs</small></div><div><b>{selectedProject.criticalIssues}</b><small>critical</small></div></div>
-    <a className="inspector-link" href={selectedProject.url} target="_blank" rel="noreferrer">Open repository <span>↗</span></a>
+    <a className="inspector-link" href={selectedProject.url} target="_blank" rel="noreferrer">Open repository <span>↗</span></a><button className="inspector-action-button" type="button" onClick={()=>setActionOpen(true)}>ARIA Command <span>→</span></button>
   </aside>:null}
  </main>;
 }

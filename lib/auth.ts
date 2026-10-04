@@ -99,7 +99,7 @@ export function generatePinHash(pin:string){
   return new Promise<string>((resolve,reject)=>{
     scryptCallback(pin,salt,keylen,{N,r,p,maxmem:32*1024*1024},(error,derived)=>{
       if(error)return reject(error);
-      resolve(\`scrypt$\${N}$\${r}$\${p}$\${salt}$\${Buffer.from(derived).toString("hex")}\`);
+      resolve(`scrypt${N}${r}${p}${salt}${Buffer.from(derived).toString("hex")}`);
     });
   });
 }

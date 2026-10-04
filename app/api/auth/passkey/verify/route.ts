@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import {
@@ -17,7 +18,7 @@ export const runtime="nodejs";
 export async function POST(request:Request){
   try{
     const body=await request.json();
-    const challenge=readChallengeToken((await (await import("next/headers")).cookies()).get(challengeCookieName)?.value,"authentication");
+    const challenge=readChallengeToken((await cookies()).get(challengeCookieName)?.value,"authentication");
     if(!challenge) return NextResponse.json({error:"The passkey challenge expired. Try again."},{status:400});
 
     const passkeys=await readPasskeys();

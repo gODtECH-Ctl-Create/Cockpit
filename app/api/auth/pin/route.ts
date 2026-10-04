@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSessionToken, sessionCookie, sessionCookieName, verifyPin } from "@/lib/auth";
 
@@ -6,14 +7,16 @@ const attempts=new Map<string,{count:number;blockedUntil:number}>();
 const MAX_ATTEMPTS=5;
 const LOCK_SECONDS=15*60;
 
-function clientKey(){
-  return "unknown";
+async function clientKey(){
+  const h=await headers();
+  const forwarded=h.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim()||h.get("x-real-ip")||"unknown";
 }
 
 export const runtime="nodejs";
 
 export async function POST(request:Request){
-  const key=clientKey();
+  const key=await clientKey();
   const now=Date.now();
   const state=attempts.get(key);
   if(state?.blockedUntil&&state.blockedUntil>now){
@@ -33,7 +36,8 @@ export async function POST(request:Request){
       return NextResponse.json({error:next.blockedUntil?"Too many attempts. Try again later.":"Incorrect PIN."},{status:401});
     }
     attempts.delete(key);
-    const response=NextResponse.json({ok:true,passkeyConfigured:(await import("@/lib/auth")).readPasskeys().then(items=>items.length>0)});
+    const { readPasskeys }=await import("@/lib/auth");
+    const response=NextResponse.json({ok:true,passkeyConfigured:(await readPasskeys()).length>0});
     response.cookies.set(sessionCookieName,createSessionToken(),sessionCookie());
     return response;
   }catch(error){

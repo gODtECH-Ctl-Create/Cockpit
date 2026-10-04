@@ -9,7 +9,7 @@ type Project = {
   lastCommit:{sha:string;message:string;date:string|null;url:string}|null;
   openIssues:number; criticalIssues:number; openPullRequests:number;
   ci:{status:string;conclusion:string|null;url:string}|null;
-  projectState:string; priority:string; currentFocus:string;
+  projectState:string; priority:string; currentFocus:string; nextStep?:string;
   statusNote:string; access:string; visibility?:string; staleDays:number|null;
 };
 type ResponseData={projects:Project[];generatedAt:string;hasGitHubToken:boolean};

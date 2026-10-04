@@ -1,0 +1,207 @@
+name: gODtECH Project State
+
+on:
+  workflow_call:
+    secrets:
+      NVIDIA_API_KEY:
+        required: false
+      NVIDIA_MODEL:
+        required: false
+
+jobs:
+  preflight:
+    name: Inspect repository contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Read local agent contract first
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AGENTS.md || { echo "::error::AGENTS.md is missing"; exit 1; }
+          echo "AGENTS.md found."
+          test -f .godtech/project.yml || { echo "::warning::.godtech/project.yml is missing; sync job will initialize it on trusted pushes."; }
+
+      - name: Validate project state when present
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.godtech/project.yml')
+          if not p.exists():
+              print('No project state yet; allowed for first-time bootstrap.')
+              raise SystemExit(0)
+          text = p.read_text(encoding='utf-8')
+          for key in ('state:', 'priority:', 'current_focus:', 'next_step:', 'blockers:', 'status_note:', 'last_worked_on:'):
+              if key not in text:
+                  raise SystemExit(f'Missing required project-state key: {key}')
+          print('Project state shape looks valid.')
+          PY
+
+      - name: Review context before implementation checks
+        shell: bash
+        run: |
+          echo 'Repository contract loaded.'
+          echo 'This workflow does not execute repository code during preflight.'
+          echo 'Agents should inspect AGENTS.md and .godtech/project.yml before implementation.'
+
+  synchronize:
+    name: Synchronize project state
+    if: github.event_name == 'push' && github.ref_type == 'branch'
+    needs: preflight
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout trusted branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Collect repository evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'AGENTS.md:'
+            sed -n '1,220p' AGENTS.md
+            echo
+            echo 'PROJECT_STATE:'
+            test -f .godtech/project.yml && cat .godtech/project.yml || true
+            echo
+            echo 'RECENT_COMMIT:'
+            git log -1 --pretty=format:'%H%n%ad%n%s' --date=iso-strict
+            echo
+            echo 'CHANGED_FILES:'
+            git diff-tree --no-commit-id --name-status -r HEAD
+          } > /tmp/godtech-evidence.txt
+
+      - name: Synchronize with NVIDIA when configured
+        if: ${{ secrets.NVIDIA_API_KEY != '' }}
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          NVIDIA_MODEL: ${{ secrets.NVIDIA_MODEL || 'openai/gpt-oss-20b' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, re, urllib.request
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          evidence = Path('/tmp/godtech-evidence.txt').read_text(encoding='utf-8')
+          prompt = '''You are synchronizing the current project state for gODtECH Cockpit.
+
+Read the repository contract and state evidence below. Return ONLY a single JSON object with:
+state, priority, current_focus, next_step, blockers, status_note.
+
+Allowed state values: active, paused, blocked, partial, shipped, dormant, archived.
+Allowed priority values: critical, high, medium, normal, low.
+blockers must be an array of short strings.
+Use evidence only. Do not invent facts. Keep each text field concise.
+If the existing state is still accurate, preserve it.
+Do not create new roadmap items.
+
+EVIDENCE:
+''' + evidence
+
+          payload = {
+              'model': os.environ['NVIDIA_MODEL'],
+              'messages': [
+                  {'role': 'system', 'content': 'You are a conservative project-state synchronizer. Evidence is authoritative.'},
+                  {'role': 'user', 'content': prompt}
+              ],
+              'temperature': 0.1,
+              'max_tokens': 500
+          }
+          req = urllib.request.Request(
+              'https://integrate.api.nvidia.com/v1/chat/completions',
+              data=json.dumps(payload).encode(),
+              headers={'Authorization': 'Bearer ' + os.environ['NVIDIA_API_KEY'], 'Content-Type': 'application/json'}
+          )
+          with urllib.request.urlopen(req, timeout=45) as response:
+              data = json.load(response)
+
+          raw = data['choices'][0]['message']['content'].strip()
+          match = re.search(r'\{.*\}', raw, re.S)
+          if not match:
+              raise SystemExit('NVIDIA did not return a JSON state object.')
+          result = json.loads(match.group(0))
+
+          allowed_states = {'active','paused','blocked','partial','shipped','dormant','archived'}
+          allowed_priorities = {'critical','high','medium','normal','low'}
+          if result.get('state') not in allowed_states:
+              raise SystemExit('Invalid state returned by NVIDIA.')
+          if result.get('priority') not in allowed_priorities:
+              raise SystemExit('Invalid priority returned by NVIDIA.')
+          if not isinstance(result.get('blockers'), list):
+              raise SystemExit('Invalid blockers returned by NVIDIA.')
+
+          def clean(value, limit):
+              return str(value or '').replace('\n', ' ').strip()[:limit]
+
+          blockers = [clean(x, 180) for x in result['blockers'][:8] if clean(x, 180)]
+          yml = [
+              'project:',
+              f"  state: {result['state']}",
+              f"  priority: {result['priority']}",
+              f"  current_focus: {json.dumps(clean(result.get('current_focus'), 220))}",
+              f"  next_step: {json.dumps(clean(result.get('next_step'), 260))}",
+              '  blockers:'
+          ]
+          yml += [f"    - {json.dumps(x)}" for x in blockers] or ['    - []']
+          yml += [
+              f"  status_note: {json.dumps(clean(result.get('status_note'), 320))}",
+              f"  last_worked_on: {datetime.now(timezone.utc).date().isoformat()}"
+          ]
+          Path('.godtech').mkdir(parents=True, exist_ok=True)
+          Path('.godtech/project.yml').write_text('\n'.join(yml) + '\n', encoding='utf-8')
+          print('Project state synchronized.')
+          PY
+
+      - name: Ensure a state file exists
+        if: ${{ secrets.NVIDIA_API_KEY == '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .godtech
+          if [ ! -f .godtech/project.yml ]; then
+            cat > .godtech/project.yml <<'EOF'
+          project:
+            state: unknown
+            priority: normal
+            current_focus: ""
+            next_step: "Inspect the current repository state and define the next meaningful step."
+            blockers:
+              - "NVIDIA_API_KEY is not configured for automatic state reasoning."
+            status_note: "State bootstrap created by the gODtECH Cockpit workflow; human or AI agent should reconcile this file."
+            last_worked_on: ""
+          EOF
+            git config user.name 'gODtECH Cockpit'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add .godtech/project.yml
+            git commit -m 'chore: bootstrap gODtECH project state'
+            git push
+          fi
+
+      - name: Commit synchronized state
+        if: ${{ secrets.NVIDIA_API_KEY != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- .godtech/project.yml; then
+            echo 'Project state unchanged.'
+            exit 0
+          fi
+          git config user.name 'gODtECH Cockpit'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .godtech/project.yml
+          git commit -m 'chore: sync gODtECH project state'
+          git push

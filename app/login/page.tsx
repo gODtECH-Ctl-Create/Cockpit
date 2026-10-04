@@ -22,12 +22,12 @@ export default function LoginPage(){
       }
       const optionsResponse=await fetch("/api/auth/passkey/options",{cache:"no-store"});
       const options=await optionsResponse.json();
-      if(!optionsResponse.ok) throw new Error(options.error||"Face ID is not enrolled yet.");
+      if(optionsResponse.status===404){setMode("pin"); throw new Error(options.error||"No Face ID passkey is enrolled yet. Use your 6-digit PIN once to enable it.");} if(!optionsResponse.ok) throw new Error(options.error||"Face ID verification could not start.");
       const credential=await startAuthentication({optionsJSON:options.options});
       const verifyResponse=await fetch("/api/auth/passkey/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(credential)});
       const result=await verifyResponse.json();
       if(!verifyResponse.ok) throw new Error(result.error||"Face ID verification failed.");
-      router.replace("/workspace");
+      router.replace("/");
     }catch(e){
       setError(e instanceof Error?e.message:"Passkey login failed.");
     }finally{setBusy(false);}
@@ -68,9 +68,9 @@ export default function LoginPage(){
     <div className="login-glow"/>
     <section className="login-card">
       <div className="neural-brand-mark">A</div>
-      <span className="login-kicker">PRIVATE ARIA WORKSPACE</span>
+      <span className="login-kicker">PRIVATE ARIA ACCESS</span>
       <h1>{pinVerified?"Device unlocked.":"Login to ARIA."}</h1>
-      <p>{pinVerified?"This session is authenticated. Add Face ID on this device, or continue to the workspace.":"Use your device passkey for biometric login, or fall back to your 6-digit ARIA PIN."}</p>
+      <p>{pinVerified?"This session is authenticated. Return to the neural map, or add Face ID on this device for faster login.":"Use your device passkey for biometric login, or fall back to your 6-digit ARIA PIN."}</p>
 
       {!pinVerified?<div className="login-methods">
         <button className="login-biometric" type="button" onClick={()=>void loginWithPasskey()} disabled={busy}>
@@ -93,7 +93,7 @@ export default function LoginPage(){
           {busy?"Waiting for Face ID…":"Enable Face ID on this device"}
         </button>
         {passkeyReady?<small className="login-hint">ARIA already has a passkey. You can add another device passkey.</small>:null}
-        <Link className="login-secondary" href="/workspace">Continue to workspace →</Link>
+        <Link className="login-secondary" href="/">Return to neural map →</Link>
       </div>}
 
       {error?<div className="login-error" role="alert">{error}</div>:null}

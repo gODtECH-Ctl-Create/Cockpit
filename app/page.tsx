@@ -23,7 +23,7 @@ const systems:Entity[]=[
 const rank:Record<string,number>={critical:0,high:1,medium:2,normal:3,low:4};
 function needsAttention(p:Project){return p.access!=="ok"||p.projectState==="blocked"||p.criticalIssues>0||p.ci?.conclusion==="failure"||(p.staleDays??0)>30;}
 function statusText(p:Project){if(p.projectState==="blocked")return"Blocked";if(p.criticalIssues>0)return p.criticalIssues+" critical issue"+(p.criticalIssues===1?"":"s");if(p.ci?.conclusion==="failure")return"Latest workflow failed";if((p.staleDays??0)>30)return"Inactive for "+p.staleDays+" days";return p.projectState;}
-function curve(x:number,y:number,bend:number){const mx=(50+x)/2,my=(50+y)/2,dx=x-50,dy=y-50,len=Math.max(1,Math.hypot(dx,dy)),amount=bend*Math.min(6,len/5),nx=-dy/len,ny=dx/len;return\`M50 50 Q\${(mx+nx*amount).toFixed(2)} \${(my+ny*amount).toFixed(2)} \${x.toFixed(2)} \${y.toFixed(2)}\`;}
+function curve(x:number,y:number,bend:number){const mx=(50+x)/2,my=(50+y)/2,dx=x-50,dy=y-50,len=Math.max(1,Math.hypot(dx,dy)),amount=bend*Math.min(6,len/5),nx=-dy/len,ny=dx/len;return "M50 50 Q"+(mx+nx*amount).toFixed(2)+" "+(my+ny*amount).toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2);}
 
 export default function PublicNeuralMap(){
  const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null);

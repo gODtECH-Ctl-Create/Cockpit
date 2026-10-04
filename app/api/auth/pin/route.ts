@@ -19,7 +19,7 @@ export async function POST(request:Request){
   const now=Date.now();
   const state=attempts.get(key);
   if(state?.blockedUntil&&state.blockedUntil>now){
-    return NextResponse.json({error:"Too many attempts. Try again later."},{status:429,headers:{"Retry-After":String(Math.ceil((state.blockedUntil-now)/1000))}});
+    return NextResponse.json({error:"Too many attempts. Try again later."},{status:429,headers:{"Retry-After":String(Math.ceil((state.blockedUntil-now)/1000))});
   }
 
   try{
@@ -35,8 +35,7 @@ export async function POST(request:Request){
       return NextResponse.json({error:next.blockedUntil?"Too many attempts. Try again later.":"Incorrect PIN."},{status:401});
     }
     attempts.delete(key);
-    const { readPasskeys }=await import("@/lib/auth");
-    const response=NextResponse.json({ok:true,passkeyConfigured:(await readPasskeys()).length>0});
+    const response=NextResponse.json({ok:true});
     response.cookies.set(sessionCookieName,createSessionToken(),sessionCookie());
     return response;
   }catch(error){

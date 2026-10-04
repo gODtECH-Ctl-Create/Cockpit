@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasSession } from "@/lib/auth";
 
 const NVIDIA_URL = process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1/chat/completions";
 const NVIDIA_MODEL = process.env.NVIDIA_MODEL ?? "openai/gpt-oss-20b";
@@ -6,6 +7,7 @@ const NVIDIA_MODEL = process.env.NVIDIA_MODEL ?? "openai/gpt-oss-20b";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (!await hasSession()) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   if (!process.env.NVIDIA_API_KEY) {
     return NextResponse.json({ error: "NVIDIA_API_KEY is not configured." }, { status: 503 });
   }

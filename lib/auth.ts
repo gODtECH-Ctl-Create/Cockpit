@@ -1,10 +1,8 @@
 import { createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
-import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { get, put } from "@vercel/blob";
 import type { WebAuthnCredential } from "@simplewebauthn/server";
 
-const scrypt=promisify(scryptCallback);
 const SESSION_COOKIE="aria_session";
 const CHALLENGE_COOKIE="aria_webauthn_challenge";
 const PASSKEY_PATH="auth/passkeys.json";
@@ -106,7 +104,7 @@ export function generatePinHash(pin:string){
 export async function verifyPin(pin:string){
   if(!/^\d{6}$/.test(pin)) return false;
   const cfg=pinConfig();
-  const derived=Buffer.from(await scrypt(pin,cfg.salt,32,{N:cfg.N,r:cfg.r,p:cfg.p,maxmem:32*1024*1024}) as Buffer);
+  const derived=await new Promise<Buffer>((resolve,reject)=>scryptCallback(pin,cfg.salt,32,{N:cfg.N,r:cfg.r,p:cfg.p,maxmem:32*1024*1024},(error,result)=>{if(error)return reject(error);resolve(Buffer.from(result));}));
   const stored=Buffer.from(cfg.hash,"hex");
   return derived.length===stored.length&&timingSafeEqual(derived,stored);
 }

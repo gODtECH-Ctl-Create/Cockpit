@@ -1,0 +1,9 @@
+project:
+  state: active
+  priority: high
+  current_focus: "Working V1 dashboard and repository-state integration"
+  next_step: "Connect server-side GitHub access and complete the selected-repository rollout"
+  blockers:
+    - []
+  status_note: "V1 dashboard is deployed; private-repository access still requires a server-side GitHub credential."
+  last_worked_on: "2026-10-04"

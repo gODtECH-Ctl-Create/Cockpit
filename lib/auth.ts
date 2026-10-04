@@ -112,11 +112,15 @@ export async function verifyPin(pin:string){
 }
 
 export async function readPasskeys():Promise<StoredPasskey[]>{
-  const result=await get(PASSKEY_PATH,{access:"private",useCache:false});
-  if(!result)return [];
-  const text=await new Response(result.stream).text();
-  const parsed=JSON.parse(text) as {passkeys?:StoredPasskey[]};
-  return Array.isArray(parsed.passkeys)?parsed.passkeys:[];
+  try{
+    const result=await get(PASSKEY_PATH,{access:"private",useCache:false});
+    if(!result)return [];
+    const text=await new Response(result.stream).text();
+    const parsed=JSON.parse(text) as {passkeys?:StoredPasskey[]};
+    return Array.isArray(parsed.passkeys)?parsed.passkeys:[];
+  }catch{
+    return [];
+  }
 }
 export async function writePasskeys(passkeys:StoredPasskey[]){
   await put(PASSKEY_PATH,JSON.stringify({passkeys}),{access:"private",allowOverwrite:true});

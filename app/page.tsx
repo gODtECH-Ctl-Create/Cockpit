@@ -42,7 +42,7 @@ function statusText(p:Project){
 function curve(x:number,y:number,bend:number){
  const mx=(50+x)/2,my=(50+y)/2,dx=x-50,dy=y-50,len=Math.max(1,Math.hypot(dx,dy));
  const nx=-dy/len,ny=dx/len,amount=bend*Math.min(6,len/5);
- return \`M50 50 Q\${(mx+nx*amount).toFixed(2)} \${(my+ny*amount).toFixed(2)} \${x.toFixed(2)} \${y.toFixed(2)}\`;
+ return `M50 50 Q${(mx+nx*amount).toFixed(2)} ${(my+ny*amount).toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)}`;
 }
 
 export default function NeuralHome(){
@@ -93,7 +93,7 @@ export default function NeuralHome(){
   finally{setAsking(false);}
  }
 
- const selectedProject=selected?.startsWith("project:")?(data?.projects??[]).find(p=>\`project:\${p.fullName}\`===selected)??null:null;
+ const selectedProject=selected?.startsWith("project:")?(data?.projects??[]).find(p=>`project:${p.fullName}`===selected)??null:null;
  const selectedSystem=systemEntities.find(e=>e.id===selected)??null;
  const active=(id:string)=>!hovered||hovered==="aria"||hovered===id||hovered===selected;
 
@@ -113,18 +113,18 @@ export default function NeuralHome(){
     <defs><filter id="neuralGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     {positioned.map(({project,x,y,index})=>{
       const id="project:"+project.fullName;
-      return <path key={id} d={curve(x,y,index%2?-.8:.8)} className={\`neural-line \${needsAttention(project)?"attention":"project-line"} \${active(id)?"visible":"dim"}\`}/>;
+      return <path key={id} d={curve(x,y,index%2?-.8:.8)} className={`neural-line ${needsAttention(project)?"attention":"project-line"} ${active(id)?"visible":"dim"}`}/>;
     })}
-    {systemEntities.map((e,i)=><path key={e.id} d={curve(e.x,e.y,i%2?-1:1)} className={\`neural-line system-line \${active(e.id)?"visible":"dim"}\`}/>)}
-    <path d={curve(27,12,1)} className={\`neural-line signal-line amber \${active("attention")?"visible":"dim"}\`}/>
-    <path d={curve(73,88,-1)} className={\`neural-line signal-line blue \${active("work")?"visible":"dim"}\`}/>
+    {systemEntities.map((e,i)=><path key={e.id} d={curve(e.x,e.y,i%2?-1:1)} className={`neural-line system-line ${active(e.id)?"visible":"dim"}`}/>)}
+    <path d={curve(27,12,1)} className={`neural-line signal-line amber ${active("attention")?"visible":"dim"}`}/>
+    <path d={curve(73,88,-1)} className={`neural-line signal-line blue ${active("work")?"visible":"dim"}`}/>
    </svg>
 
    <div className="neural-entities">
     {positioned.map(({project,x,y})=>{
       const id="project:"+project.fullName;
-      return <button key={id} type="button" className={\`neural-node project-node \${needsAttention(project)?"attention":""} \${selected===id?"selected":""} \${hovered&&!active(id)?"faded":""}\`}
-        style={{left:\`\${x}%\`,top:\`\${y}%\`}} onMouseEnter={()=>setHovered(id)} onMouseLeave={()=>setHovered(v=>v===id?null:v)} onFocus={()=>setHovered(id)} onBlur={()=>setHovered(v=>v===id?null:v)} onClick={()=>setSelected(v=>v===id?null:id)}>
+      return <button key={id} type="button" className={`neural-node project-node ${needsAttention(project)?"attention":""} ${selected===id?"selected":""} ${hovered&&!active(id)?"faded":""}`}
+        style={{left:`${x}%`,top:`${y}%`}} onMouseEnter={()=>setHovered(id)} onMouseLeave={()=>setHovered(v=>v===id?null:v)} onFocus={()=>setHovered(id)} onBlur={()=>setHovered(v=>v===id?null:v)} onClick={()=>setSelected(v=>v===id?null:id)}>
         <i className="node-core"/><strong>{project.name}</strong><small>{needsAttention(project)?"ATTENTION":project.projectState.toUpperCase()}</small>
         <span className="node-tooltip"><b>{project.name}</b><span>{statusText(project)}</span><em>{project.currentFocus||project.description||"Project state tracked by ARIA."}</em></span>
       </button>;
@@ -151,7 +151,7 @@ export default function NeuralHome(){
       <span className="node-tooltip"><b>Open work</b><span>{openWork} items</span><em>Open issues and pull requests across the tracked workspace.</em></span>
     </button>
 
-    {systemEntities.map(e=><button key={e.id} type="button" className={\`neural-node system-node \${e.accent}\`} style={{left:\`\${e.x}%\`,top:\`\${e.y}%\`}} onMouseEnter={()=>setHovered(e.id)} onMouseLeave={()=>setHovered(v=>v===e.id?null:v)} onFocus={()=>setHovered(e.id)} onBlur={()=>setHovered(v=>v===e.id?null:v)} onClick={()=>setSelected(v=>v===e.id?null:e.id)}>
+    {systemEntities.map(e=><button key={e.id} type="button" className={`neural-node system-node ${e.accent}`} style={{left:`${e.x}%`,top:`${e.y}%`}} onMouseEnter={()=>setHovered(e.id)} onMouseLeave={()=>setHovered(v=>v===e.id?null:v)} onFocus={()=>setHovered(e.id)} onBlur={()=>setHovered(v=>v===e.id?null:v)} onClick={()=>setSelected(v=>v===e.id?null:e.id)}>
       <i className="system-core"/><strong>{e.label}</strong><small>{e.status}</small>
       <span className="node-tooltip"><b>{e.label}</b><span>{e.status}</span><em>{e.summary}</em></span>
     </button>)}

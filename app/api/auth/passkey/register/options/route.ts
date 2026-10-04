@@ -16,7 +16,6 @@ export async function GET(){
     userDisplayName:"gODtECH — ARIA Owner",
     userID,
     attestationType:"none",
-    userVerification:"required",
     authenticatorSelection:{
       residentKey:"required",
       userVerification:"required",

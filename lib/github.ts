@@ -92,7 +92,8 @@ async function readProjectState(repo: string) {
       nextStep: String(project.next_step ?? ""),
       blockers: Array.isArray(project.blockers) ? project.blockers.map(String) : [],
       statusNote: String(project.status_note ?? ""),
-      source: "project.yml" as const
+      source: "project.yml" as const,
+      lastWorkedOn: typeof project.last_worked_on === "string" && project.last_worked_on ? project.last_worked_on : null
     };
   } catch {
     return {
@@ -102,7 +103,8 @@ async function readProjectState(repo: string) {
       nextStep: "",
       blockers: [],
       statusNote: "",
-      source: "derived" as const
+      source: "derived" as const,
+      lastWorkedOn: null
     };
   }
 }
@@ -159,7 +161,10 @@ async function snapshot(project: typeof trackedProjects[number]): Promise<Projec
       blockers: state.blockers,
       statusNote: state.statusNote,
       stateSource: state.source,
-      staleDays: daysSince(lastDate)
+      lastWorkedOn: state.lastWorkedOn,
+      staleDays: state.source === "project.yml"
+        ? daysSince(state.lastWorkedOn ?? lastDate)
+        : daysSince(lastDate)
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to read repository";
@@ -185,6 +190,7 @@ async function snapshot(project: typeof trackedProjects[number]): Promise<Projec
       blockers: [],
       statusNote: message,
       stateSource: "derived",
+      lastWorkedOn: null,
       staleDays: null
     };
   }

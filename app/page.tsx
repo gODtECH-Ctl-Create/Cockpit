@@ -10,7 +10,7 @@ type Project = {
   openIssues:number; criticalIssues:number; openPullRequests:number;
   ci:{status:string;conclusion:string|null;url:string}|null;
   projectState:string; priority:string; currentFocus:string;
-  statusNote:string; access:string; staleDays:number|null;
+  statusNote:string; access:string; visibility?:string; staleDays:number|null;
 };
 type ResponseData={projects:Project[];generatedAt:string;hasGitHubToken:boolean};
 type SessionData={authenticated:boolean;passkeyConfigured:boolean};
@@ -97,7 +97,7 @@ export default function PublicNeuralMap(){
    </div>
    {latest?<div className="latest-neural-signal"><span>LATEST SIGNAL</span><b>{latest.name}</b><p>{latest.lastCommit?.message??"Project activity"}</p><small>Recent observable activity</small></div>:null}
    <div className="neural-public-note"><span>{authenticated?"PRIVATE / EDIT ACCESS":"PUBLIC / VIEW ONLY"}</span><p>{authenticated?"Authenticated mode keeps you on the neural map and unlocks project inspection, private telemetry, and device security controls.":"Explore the operation at a glance. Login unlocks the authenticated neural map."}</p></div>
-   <div className="neural-stage-footer"><div className="neural-legend"><span><i className="legend-project"/>Projects</span><span><i className="legend-system"/>Systems</span><span><i className="legend-signal"/>Signals</span></div><span>Hover nodes to view current state · no actions available in public mode</span></div>
+   <div className="neural-stage-footer"><div className="neural-legend"><span><i className="legend-project"/>Projects</span><span><i className="legend-system"/>Systems</span><span><i className="legend-signal"/>Signals</span></div><span>{authenticated?"Click a project node to open its private inspector":"Hover nodes to view current state · no actions available in public mode"}</span></div>
   </section>
   <div className="neural-mobile-enter">{authenticated?<div className="neural-auth-actions">{!passkeyConfigured?<button className="neural-enter" type="button" onClick={()=>void enrollPasskey()} disabled={authBusy}>Enable Face ID</button>:null}<button className="neural-enter" type="button" onClick={()=>void logout()} disabled={authBusy}>Lock <b>→</b></button></div>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}</div>
   {authMessage?<div className="neural-auth-message" role="status">{authMessage}</div>:null}

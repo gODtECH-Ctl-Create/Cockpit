@@ -135,28 +135,43 @@ function playCommunicationChirp(context: AudioContext, output: GainNode) {
 }
 
 function playNeuralCrackle(context: AudioContext, output: GainNode) {
-  const length = Math.max(1, Math.floor(context.sampleRate * 0.18));
+  const duration = 0.22;
+  const length = Math.max(1, Math.floor(context.sampleRate * duration));
   const buffer = context.createBuffer(1, length, context.sampleRate);
   const channel = buffer.getChannelData(0);
 
   for (let i = 0; i < length; i += 1) {
-    channel[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+    const progress = i / Math.max(1, length - 1);
+    const fadeIn = Math.min(1, progress / 0.14);
+    const fadeOut = Math.min(1, (1 - progress) / 0.32);
+    const envelope = fadeIn * fadeOut;
+    channel[i] = (Math.random() * 2 - 1) * envelope * 0.55;
   }
 
   const source = context.createBufferSource();
   source.buffer = buffer;
 
   const filter = context.createBiquadFilter();
-  filter.type = "highpass";
-  filter.frequency.setValueAtTime(randomBetween(1100, 2600), context.currentTime);
+  filter.type = "bandpass";
+  filter.frequency.setValueAtTime(randomBetween(900, 1800), context.currentTime);
+  filter.Q.setValueAtTime(0.7, context.currentTime);
 
   const envelope = context.createGain();
-  envelope.gain.setValueAtTime(randomBetween(0.0018, 0.004), context.currentTime);
-  envelope.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.18);
+  const now = context.currentTime;
+  envelope.gain.setValueAtTime(0.0001, now);
+  envelope.gain.exponentialRampToValueAtTime(randomBetween(0.0009, 0.0022), now + 0.018);
+  envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
   source.connect(filter);
   filter.connect(envelope);
   envelope.connect(output);
+  source.onended = () => {
+    try {
+      source.disconnect();
+      filter.disconnect();
+      envelope.disconnect();
+    } catch {}
+  };
   source.start();
 }
 
@@ -168,7 +183,7 @@ export async function startNeuralAmbient() {
 
   const master = context.createGain();
   master.gain.setValueAtTime(0.0001, context.currentTime);
-  master.gain.exponentialRampToValueAtTime(0.72, context.currentTime + 1.2);
+  master.gain.exponentialRampToValueAtTime(0.82, context.currentTime + 1.2);
 
   const filter = context.createBiquadFilter();
   filter.type = "lowpass";
@@ -179,8 +194,8 @@ export async function startNeuralAmbient() {
 
   const lowDrone = context.createOscillator();
   lowDrone.type = "sine";
-  lowDrone.frequency.setValueAtTime(54, context.currentTime);
-  lowDrone.frequency.linearRampToValueAtTime(68, context.currentTime + 7);
+  lowDrone.frequency.setValueAtTime(52, context.currentTime);
+  lowDrone.frequency.linearRampToValueAtTime(66, context.currentTime + 7);
   lowDrone.connect(master);
   lowDrone.start();
 

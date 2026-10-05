@@ -19,7 +19,7 @@ export async function POST(request:Request){
   const now=Date.now();
   const state=attempts.get(key);
   if(state?.blockedUntil&&state.blockedUntil>now){
-    return NextResponse.json({error:"Too many attempts. Try again later."},{status:429,headers:{"Retry-After":String(Math.ceil((state.blockedUntil-now)/1000))});
+    return NextResponse.json({error:"Too many attempts. Try again later."},{status:429,headers:{"Retry-After":String(Math.ceil((state.blockedUntil-now)/1000))}});
   }
 
   try{

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import NeuralActionConsole from "@/components/NeuralActionConsole";
-import { hasNeuralAudioSupport, playAlienCue } from "@/lib/neural-sound";
+import { hasNeuralAudioSupport, isNeuralAmbientRunning, playAlienCue, startNeuralAmbient, stopNeuralAmbient } from "@/lib/neural-sound";
 import { useEffect, useMemo, useState } from "react";
 
 type Project = {
@@ -29,8 +29,8 @@ function statusText(p:Project){if(p.projectState==="blocked")return"Blocked";if(
 function curve(x:number,y:number,bend:number){const mx=(50+x)/2,my=(50+y)/2,dx=x-50,dy=y-50,len=Math.max(1,Math.hypot(dx,dy)),amount=bend*Math.min(6,len/5),nx=-dy/len,ny=dx/len;return "M50 50 Q"+(mx+nx*amount).toFixed(2)+" "+(my+ny*amount).toFixed(2)+" "+x.toFixed(2)+" "+y.toFixed(2);}
 
 export default function PublicNeuralMap(){
- const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null); const[selectedProject,setSelectedProject]=useState<Project|null>(null); const[authenticated,setAuthenticated]=useState(false); const[authBusy,setAuthBusy]=useState(false); const[authMessage,setAuthMessage]=useState(""); const[actionOpen,setActionOpen]=useState(false); const[soundEnabled,setSoundEnabled]=useState(false); const[soundSupported,setSoundSupported]=useState(false);
- useEffect(()=>{try{setSoundEnabled(localStorage.getItem("aria-neural-sound")==="on")}catch{} setSoundSupported(hasNeuralAudioSupport());},[]);
+ const[data,setData]=useState<ResponseData|null>(null); const[loading,setLoading]=useState(true); const[hovered,setHovered]=useState<string|null>(null); const[selectedProject,setSelectedProject]=useState<Project|null>(null); const[authenticated,setAuthenticated]=useState(false); const[authBusy,setAuthBusy]=useState(false); const[authMessage,setAuthMessage]=useState(""); const[actionOpen,setActionOpen]=useState(false); const[soundEnabled,setSoundEnabled]=useState(true); const[soundSupported,setSoundSupported]=useState(false);
+ useEffect(()=>{let enabled=true; try{const saved=localStorage.getItem("aria-neural-sound"); if(saved==="off") enabled=false;}catch{} setSoundEnabled(enabled); setSoundSupported(hasNeuralAudioSupport()); if(enabled){const wake=()=>{void startNeuralAmbient(); document.removeEventListener("pointerdown",wake); document.removeEventListener("keydown",wake); document.removeEventListener("touchstart",wake);}; document.addEventListener("pointerdown",wake,{passive:true,once:true}); document.addEventListener("touchstart",wake,{passive:true,once:true}); document.addEventListener("keydown",wake,{once:true}); return()=>{document.removeEventListener("pointerdown",wake); document.removeEventListener("touchstart",wake); document.removeEventListener("keydown",wake); stopNeuralAmbient();};} return()=>stopNeuralAmbient();},[]);
  useEffect(()=>{let live=true;
   (async()=>{
     try{
@@ -53,7 +53,7 @@ export default function PublicNeuralMap(){
  const openWork=data?.projects.reduce((sum,p)=>sum+p.openIssues+p.openPullRequests,0)??0;
  const latest=useMemo(()=>[...(data?.projects??[])].filter(p=>p.lastCommit).sort((a,b)=>new Date(b.lastCommit?.date??0).getTime()-new Date(a.lastCommit?.date??0).getTime())[0]??null,[data]);
  const active=(id:string)=>!hovered||hovered===id||hovered==="aria";
- const toggleSound=()=>{if(!soundSupported)return;const next=!soundEnabled;setSoundEnabled(next);try{localStorage.setItem("aria-neural-sound",next?"on":"off")}catch{} if(next)void playAlienCue("activate");};
+ const toggleSound=()=>{if(!soundSupported)return;const next=!soundEnabled;setSoundEnabled(next);try{localStorage.setItem("aria-neural-sound",next?"on":"off")}catch{} if(next){void startNeuralAmbient(); void playAlienCue("activate");} else stopNeuralAmbient();};
  const selectProject=(project:Project)=>{if(authenticated){setSelectedProject(project);setActionOpen(false);if(soundEnabled)void playAlienCue("select");}};
  const logout=async()=>{
    setAuthBusy(true);
@@ -68,7 +68,7 @@ export default function PublicNeuralMap(){
   </header>
   <section className="neural-stage" aria-label={authenticated?"Private ARIA neural operation map":"Public ARIA neural operation map"}>
    <div className="neural-hud neural-hud-left"><span>NEURAL ACTIVITY</span><strong>LIVE OPERATION MAP</strong><small>{authenticated?"Private map · authenticated edit access":"View only · public topology · live project signals"}</small></div>
-   <div className="neural-hud neural-hud-right"><span>{data?.projects.length??"—"} PROJECTS</span><span>{attention} ATTENTION</span><span>{openWork} OPEN WORK</span></div>
+   <div className="neural-hud neural-hud-right"><span>{data?.projects.length??"—"} PROJECTS</span><span>{attention} ATTENTION</span><span>{openWork} OPEN WORK</span><span className="neural-life-status"><i className={isNeuralAmbientRunning()?"":"idle"} /> ARIA {isNeuralAmbientRunning()?"ACTIVE":"READY"}</span></div>
    <svg className="neural-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     <defs><filter id="neuralGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation=".6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     {positioned.map(({project,x,y,index})=>{const id="project:"+project.fullName;return <path key={id} d={curve(x,y,index%2?-.8:.8)} className={`neural-line ${needsAttention(project)?"attention":"project-line"} ${active(id)?"visible":"dim"}`}/>})}
@@ -84,7 +84,7 @@ export default function PublicNeuralMap(){
    </div>
    {latest?<div className="latest-neural-signal"><span>LATEST SIGNAL</span><b>{latest.name}</b><p>{latest.lastCommit?.message??"Project activity"}</p><small>Recent observable activity</small></div>:null}
    <div className="neural-public-note"><span>{authenticated?"PRIVATE / EDIT ACCESS":"PUBLIC / VIEW ONLY"}</span><p>{authenticated?"Authenticated mode keeps you on the neural map and unlocks project inspection, private telemetry, and device security controls.":"Explore the operation at a glance. Login unlocks the authenticated neural map."}</p></div>
-   <div className="neural-stage-footer"><div className="neural-legend"><span><i className="legend-project"/>Projects</span><span><i className="legend-system"/>Systems</span><span><i className="legend-signal"/>Signals</span></div><span>{authenticated?"Click a project node to open its private inspector":"Hover nodes to view current state · no actions available in public mode"}</span><button className="neural-sound-toggle" type="button" onClick={toggleSound} disabled={!soundSupported} aria-pressed={soundEnabled} title={soundSupported?"Toggle ARIA alien audio cues":"Audio cues are not supported in this browser"}><i>{soundEnabled?"◉":"◌"}</i><span>{soundEnabled?"AUDIO ON":"AUDIO OFF"}</span></button></div>
+   <div className="neural-stage-footer"><div className="neural-legend"><span><i className="legend-project"/>Projects</span><span><i className="legend-system"/>Systems</span><span><i className="legend-signal"/>Signals</span></div><span>{authenticated?"Click a project node to open its private inspector":"Hover nodes to view current state · no actions available in public mode"}</span><button className="neural-sound-toggle" type="button" onClick={toggleSound} disabled={!soundSupported} aria-pressed={soundEnabled} title={soundSupported?"Toggle ARIA alien audio cues":"Audio cues are not supported in this browser"}><i>{soundEnabled?"◉":"◌"}</i><span>{soundEnabled?"NEURAL AUDIO":"AUDIO OFF"}</span></button></div>
   </section>
   <div className="neural-mobile-enter">{authenticated?<Link className="neural-enter" href="/workspace">Workspace <b>→</b></Link>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}</div>
   {authMessage?<div className="neural-auth-message" role="status">{authMessage}</div>:null}

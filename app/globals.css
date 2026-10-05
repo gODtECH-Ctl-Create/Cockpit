@@ -1499,3 +1499,7 @@ a { color: inherit; }
 /* ARIA neural map audio */
 .neural-sound-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:30px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:rgba(10,14,18,.72);backdrop-filter:blur(10px);color:var(--muted);font-size:8px;font-weight:850;letter-spacing:.1em;cursor:pointer}.neural-sound-toggle:hover{border-color:var(--line-strong);color:var(--text)}.neural-sound-toggle:disabled{cursor:not-allowed;opacity:.4}.neural-sound-toggle[aria-pressed="true"]{border-color:rgba(185,255,61,.24);background:rgba(185,255,61,.07);color:var(--accent)}.neural-sound-toggle i{font-style:normal;font-size:11px}.neural-sound-toggle span{white-space:nowrap}
 @media(max-width:640px){.neural-sound-toggle{min-height:29px;padding:6px 8px;font-size:7px}.neural-stage-footer{gap:9px}.neural-legend{min-width:0;flex:1}.neural-sound-toggle span{display:none}}
+
+
+/* Neural life indicator */
+.neural-life-status{display:inline-flex;align-items:center;gap:6px;color:var(--success)!important}.neural-life-status i{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 10px rgba(126,231,167,.55);animation:neuralLifePulse 1.8s ease-in-out infinite}.neural-life-status i.idle{opacity:.35;animation:none}@keyframes neuralLifePulse{0%,100%{transform:scale(.7);opacity:.55}50%{transform:scale(1.15);opacity:1}}

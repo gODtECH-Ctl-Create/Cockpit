@@ -64,7 +64,7 @@ export default function PublicNeuralMap(){
   <header className="neural-header">
    <div className="neural-brand"><div className="neural-brand-mark">A</div><div><div className="neural-brand-name">ARIA</div><div className="neural-brand-sub">gODtECH command intelligence</div></div></div>
    <div className="neural-header-status"><i/><span>{authenticated?"PRIVATE MAP · EDIT ACCESS":"PUBLIC VIEW"}</span>{data?<small>· synced {new Date(data.generatedAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</small>:null}</div>
-   {authenticated?<button className="neural-enter" type="button" onClick={()=>void logout()} disabled={authBusy}>Lock <b>→</b></button>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}
+   {authenticated?<Link className="neural-enter" href="/workspace">Workspace <b>→</b></Link>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}
   </header>
   <section className="neural-stage" aria-label={authenticated?"Private ARIA neural operation map":"Public ARIA neural operation map"}>
    <div className="neural-hud neural-hud-left"><span>NEURAL ACTIVITY</span><strong>LIVE OPERATION MAP</strong><small>{authenticated?"Private map · authenticated edit access":"View only · public topology · live project signals"}</small></div>
@@ -86,7 +86,7 @@ export default function PublicNeuralMap(){
    <div className="neural-public-note"><span>{authenticated?"PRIVATE / EDIT ACCESS":"PUBLIC / VIEW ONLY"}</span><p>{authenticated?"Authenticated mode keeps you on the neural map and unlocks project inspection, private telemetry, and device security controls.":"Explore the operation at a glance. Login unlocks the authenticated neural map."}</p></div>
    <div className="neural-stage-footer"><div className="neural-legend"><span><i className="legend-project"/>Projects</span><span><i className="legend-system"/>Systems</span><span><i className="legend-signal"/>Signals</span></div><span>{authenticated?"Click a project node to open its private inspector":"Hover nodes to view current state · no actions available in public mode"}</span><button className="neural-sound-toggle" type="button" onClick={toggleSound} disabled={!soundSupported} aria-pressed={soundEnabled} title={soundSupported?"Toggle ARIA alien audio cues":"Audio cues are not supported in this browser"}><i>{soundEnabled?"◉":"◌"}</i><span>{soundEnabled?"AUDIO ON":"AUDIO OFF"}</span></button></div>
   </section>
-  <div className="neural-mobile-enter">{authenticated?<button className="neural-enter" type="button" onClick={()=>void logout()} disabled={authBusy}>Lock <b>→</b></button>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}</div>
+  <div className="neural-mobile-enter">{authenticated?<Link className="neural-enter" href="/workspace">Workspace <b>→</b></Link>:<Link className="neural-enter" href="/login">Login <b>→</b></Link>}</div>
   {authMessage?<div className="neural-auth-message" role="status">{authMessage}</div>:null}
   {loading&&!data?<div className="neural-loading"><div className="loader-ring"/><span>Reading operation map…</span></div>:null}
   {authenticated&&selectedProject&&!actionOpen?<aside className="neural-inspector">

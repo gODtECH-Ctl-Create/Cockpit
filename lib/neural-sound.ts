@@ -183,21 +183,52 @@ export async function startNeuralAmbient() {
 
   const master = context.createGain();
   master.gain.setValueAtTime(0.0001, context.currentTime);
-  master.gain.exponentialRampToValueAtTime(0.82, context.currentTime + 1.2);
+  master.gain.exponentialRampToValueAtTime(1.18, context.currentTime + 1.2);
+
+  const safety = context.createDynamicsCompressor();
+  safety.threshold.setValueAtTime(-20, context.currentTime);
+  safety.knee.setValueAtTime(16, context.currentTime);
+  safety.ratio.setValueAtTime(8, context.currentTime);
+  safety.attack.setValueAtTime(0.012, context.currentTime);
+  safety.release.setValueAtTime(0.24, context.currentTime);
 
   const filter = context.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(2100, context.currentTime);
-  filter.Q.setValueAtTime(0.6, context.currentTime);
+  filter.frequency.setValueAtTime(4200, context.currentTime);
+  filter.Q.setValueAtTime(0.5, context.currentTime);
   master.connect(filter);
-  filter.connect(context.destination);
+  filter.connect(safety);
+  safety.connect(context.destination);
 
   const lowDrone = context.createOscillator();
   lowDrone.type = "sine";
-  lowDrone.frequency.setValueAtTime(52, context.currentTime);
-  lowDrone.frequency.linearRampToValueAtTime(66, context.currentTime + 7);
-  lowDrone.connect(master);
+  lowDrone.frequency.setValueAtTime(46, context.currentTime);
+  lowDrone.frequency.linearRampToValueAtTime(64, context.currentTime + 7);
+
+  const lowGain = context.createGain();
+  lowGain.gain.setValueAtTime(0.0001, context.currentTime);
+  lowGain.gain.exponentialRampToValueAtTime(0.105, context.currentTime + 1.6);
+  lowGain.connect(master);
+  lowDrone.connect(lowGain);
   lowDrone.start();
+
+  const highPresence = context.createOscillator();
+  highPresence.type = "triangle";
+  highPresence.frequency.setValueAtTime(1550, context.currentTime);
+  highPresence.frequency.linearRampToValueAtTime(2450, context.currentTime + 6.5);
+
+  const highGain = context.createGain();
+  highGain.gain.setValueAtTime(0.0001, context.currentTime);
+  highGain.gain.exponentialRampToValueAtTime(0.018, context.currentTime + 2.1);
+  highPresence.connect(highGain);
+
+  const highFilter = context.createBiquadFilter();
+  highFilter.type = "highpass";
+  highFilter.frequency.setValueAtTime(1350, context.currentTime);
+  highFilter.Q.setValueAtTime(0.6, context.currentTime);
+  highGain.connect(highFilter);
+  highFilter.connect(master);
+  highPresence.start();
 
   const slowPulse = context.createOscillator();
   slowPulse.type = "triangle";
@@ -235,13 +266,26 @@ export async function startNeuralAmbient() {
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), context.currentTime);
     master.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+    lowGain.gain.cancelScheduledValues(context.currentTime);
+    lowGain.gain.setValueAtTime(Math.max(lowGain.gain.value, 0.0001), context.currentTime);
+    lowGain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+
+    highGain.gain.cancelScheduledValues(context.currentTime);
+    highGain.gain.setValueAtTime(Math.max(highGain.gain.value, 0.0001), context.currentTime);
+    highGain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+
     lowDrone.stop(stopAt);
+    highPresence.stop(stopAt);
     slowPulse.stop(stopAt);
 
     window.setTimeout(() => {
       try {
         master.disconnect();
         filter.disconnect();
+        safety.disconnect();
+        lowGain.disconnect();
+        highGain.disconnect();
+        highFilter.disconnect();
       } catch {}
     }, 650);
 
